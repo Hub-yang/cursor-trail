@@ -1,0 +1,94 @@
+{
+  "name": "cursor-trail",
+  "displayName": "Cursor Trail",
+  "description": "Neovide-style cursor trailing particle effect for VSCode",
+  "version": "0.1.0",
+  "publisher": "cursor-trail",
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Themes",
+    "Other"
+  ],
+  "keywords": [
+    "cursor",
+    "trail",
+    "particle",
+    "animation",
+    "neovide"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "cursorTrail.enable",
+        "title": "Cursor Trail: Enable"
+      },
+      {
+        "command": "cursorTrail.disable",
+        "title": "Cursor Trail: Disable"
+      },
+      {
+        "command": "cursorTrail.reload",
+        "title": "Cursor Trail: Reload (re-inject after VSCode update)"
+      }
+    ],
+    "configuration": {
+      "title": "Cursor Trail",
+      "properties": {
+        "cursorTrail.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to enable the cursor trail effect."
+        },
+        "cursorTrail.color": {
+          "type": "string",
+          "default": "#00AAFF",
+          "pattern": "^#([0-9A-Fa-f]{3}|[0-9A-Fa-f]{6})$",
+          "description": "Hex color for the cursor trail (e.g. #00AAFF)."
+        },
+        "cursorTrail.style": {
+          "type": "string",
+          "enum": [
+            "line",
+            "block"
+          ],
+          "default": "line",
+          "description": "Cursor style — 'line' (filled path) or 'block' (stroked lines)."
+        },
+        "cursorTrail.trailLength": {
+          "type": "number",
+          "default": 8,
+          "minimum": 3,
+          "maximum": 20,
+          "description": "Number of trail particles (3–20). Higher values may affect performance."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "node esbuild.config.js",
+    "watch": "node esbuild.config.js --watch",
+    "package": "vsce package",
+    "vscode:prepublish": "node esbuild.config.js --production"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "@types/vscode": "^1.110.0",
+    "@vscode/vsce": "^3.7.1",
+    "esbuild": "^0.27.5",
+    "typescript": "^6.0.2"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@vscode/vsce-sign",
+      "esbuild",
+      "keytar"
+    ]
+  }
+}

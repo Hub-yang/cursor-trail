@@ -1,0 +1,40 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "pnpm: build",
+      "type": "shell",
+      "command": "pnpm build",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": "$tsc",
+      "detail": "esbuild bundle (extension + trail IIFE)"
+    },
+    {
+      "label": "pnpm: watch",
+      "type": "shell",
+      "command": "pnpm watch",
+      "group": "build",
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "esbuild",
+        "pattern": {
+          "regexp": "^(.*):(\\d+):(\\d+): (error|warning): (.*)$",
+          "file": 1,
+          "line": 2,
+          "column": 3,
+          "severity": 4,
+          "message": 5
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "\\[esbuild\\]",
+          "endsPattern": "\\[esbuild\\]"
+        }
+      },
+      "detail": "esbuild watch mode"
+    }
+  ]
+}

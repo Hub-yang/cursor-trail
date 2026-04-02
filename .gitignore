@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+out/
+
+# VSCode Extension package
+*.vsix
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Local config (Cowork / Claude)
+.claude/
+
+# Editor local settings (keep launch.json & tasks.json, ignore personal settings)
+.vscode/settings.json
+.vscode/settings.local.json
+
+# TypeScript cache
+*.tsbuildinfo
