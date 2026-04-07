@@ -1,104 +1,106 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import { backup } from './backupManager';
+import * as fs from 'node:fs'
+import * as path from 'node:path'
+import { backup } from './backupManager'
 
 /**
  * injector.ts
  *
- * Reads workbench.html, injects / removes the cursor trail script block,
- * and writes the file back atomically.
+ * 读取 workbench.html，注入或移除光标拖尾脚本块，并以原子方式写回文件。
  *
- * Injection markers:
+ * 注入标记格式：
  *   <!-- cursor-trail-start -->
- *   <script>…generated code…</script>
+ *   <script>…生成的代码…</script>
  *   <!-- cursor-trail-end -->
  *
- * The entire block (including markers) is inserted just before </html>.
+ * 脚本块（含标记）插入在 </html> 标签之前。
  */
 
-const MARKER_START = '<!-- cursor-trail-start -->';
-const MARKER_END = '<!-- cursor-trail-end -->';
-const INJECTION_RE = /<!-- cursor-trail-start -->[\s\S]*?<!-- cursor-trail-end -->\n?/;
+const MARKER_START = '<!-- cursor-trail-start -->'
+const MARKER_END = '<!-- cursor-trail-end -->'
+const INJECTION_RE = /<!-- cursor-trail-start -->[\s\S]*?<!-- cursor-trail-end -->\n?/
 
 /**
- * Write content to a file atomically: write to a temp file then rename.
- * This prevents a crash mid-write from corrupting workbench.html.
+ * 原子写入文件：先写临时文件，再重命名覆盖目标文件。
+ * 可防止写入过程中崩溃导致 workbench.html 损坏。
  */
 function atomicWrite(filePath: string, content: string): void {
-  const tmp = filePath + '.tmp-cursor-trail';
-  fs.writeFileSync(tmp, content, 'utf8');
-  fs.renameSync(tmp, filePath);
+  const tmp = `${filePath}.tmp-cursor-trail`
+  fs.writeFileSync(tmp, content, 'utf8')
+  fs.renameSync(tmp, filePath)
 }
 
 /**
- * Returns true if the cursor trail script has already been injected.
+ * 检测 workbench.html 中是否已存在光标拖尾脚本的注入标记。
  */
 export function isInjected(workbenchPath: string): boolean {
   try {
-    const content = fs.readFileSync(workbenchPath, 'utf8');
-    return content.includes(MARKER_START);
-  } catch {
-    return false;
+    const content = fs.readFileSync(workbenchPath, 'utf8')
+    return content.includes(MARKER_START)
+  }
+  catch {
+    return false
   }
 }
 
 /**
- * Inject the given script string into workbench.html.
+ * 将脚本字符串注入到 workbench.html 中。
  *
- * - Creates a backup if one does not already exist.
- * - If a previous injection exists, it is replaced (idempotent).
- * - Inserts the script block just before </html>.
+ * - 若备份不存在，先创建备份。
+ * - 若已有旧注入块，先移除再注入（幂等）。
+ * - 脚本块插入在 </html> 之前。
  *
- * Throws on EACCES (permission error) — the caller should surface
- * a platform-specific fix message to the user.
+ * 遇到 EACCES（权限错误）时抛出异常，由调用方向用户展示修复命令。
  */
 export function inject(workbenchPath: string, scriptContent: string): void {
-  // Ensure backup exists before modifying the file
-  backup(workbenchPath);
+  // 修改文件前确保备份存在
+  backup(workbenchPath)
 
-  let html = fs.readFileSync(workbenchPath, 'utf8');
+  let html = fs.readFileSync(workbenchPath, 'utf8')
 
-  // Remove any existing injection first (replace-all semantics)
-  html = html.replace(INJECTION_RE, '');
+  // 先移除旧注入块，保证幂等性（不会重复注入）
+  html = html.replace(INJECTION_RE, '')
 
-  const block =
-    `${MARKER_START}\n` +
-    `<script>\n${scriptContent}\n</script>\n` +
-    `${MARKER_END}\n`;
+  const block
+    = `${MARKER_START}\n`
+      + `<script>\n${scriptContent}\n</script>\n`
+      + `${MARKER_END}\n`
 
   if (html.includes('</html>')) {
-    html = html.replace('</html>', `${block}</html>`);
-  } else {
-    // Fallback: append to end of file
-    html = html + '\n' + block;
+    html = html.replace('</html>', `${block}</html>`)
+  }
+  else {
+    // 降级处理：找不到 </html> 时直接追加到文件末尾
+    html = `${html}\n${block}`
   }
 
-  atomicWrite(workbenchPath, html);
+  atomicWrite(workbenchPath, html)
 }
 
 /**
- * Remove the injected script block from workbench.html.
- * No-op if the injection is not present.
+ * 从 workbench.html 移除注入的脚本块。
+ * 若注入标记不存在则直接返回（无副作用）。
  */
 export function remove(workbenchPath: string): void {
-  let html = fs.readFileSync(workbenchPath, 'utf8');
-  if (!html.includes(MARKER_START)) return;
-  html = html.replace(INJECTION_RE, '');
-  atomicWrite(workbenchPath, html);
+  let html = fs.readFileSync(workbenchPath, 'utf8')
+  if (!html.includes(MARKER_START))
+    return
+  html = html.replace(INJECTION_RE, '')
+  atomicWrite(workbenchPath, html)
 }
 
 /**
- * Returns a human-readable permission fix command for the current platform,
- * given the workbench.html path.
+ * 根据当前操作系统，返回可供用户直接执行的权限修复命令字符串。
  */
 export function permissionFixCommand(workbenchPath: string): string {
-  const resourceDir = path.dirname(path.dirname(path.dirname(workbenchPath)));
+  const resourceDir = path.dirname(path.dirname(path.dirname(workbenchPath)))
   if (process.platform === 'darwin') {
-    return `sudo chown -R $(whoami) "${resourceDir}"`;
-  } else if (process.platform === 'win32') {
-    return `icacls "${resourceDir}" /grant %USERNAME%:F /t`;
-  } else {
-    // Linux — common paths differ by installation method
-    return `sudo chown -R $(whoami) "${resourceDir}"`;
+    return `sudo chown -R $(whoami) "${resourceDir}"`
+  }
+  else if (process.platform === 'win32') {
+    return `icacls "${resourceDir}" /grant %USERNAME%:F /t`
+  }
+  else {
+    // Linux：不同安装方式路径各异，统一使用 chown
+    return `sudo chown -R $(whoami) "${resourceDir}"`
   }
 }

@@ -1,53 +1,53 @@
-import * as fs from 'fs';
+import * as fs from 'node:fs'
 
 /**
  * backupManager.ts
  *
- * Manages the backup of workbench.html before any injection.
- * Backup file: <original>.bak-cursor-trail (same directory as workbench.html).
+ * 在每次注入操作之前管理 workbench.html 的备份。
+ * 备份文件命名为 <原文件名>.bak-cursor-trail，存放在同一目录下。
  *
- * Rules:
- *  - Backup is always a CLEAN (non-injected) copy.
- *  - backup() is a no-op if the backup already exists (idempotent).
- *  - restore() overwrites the current workbench.html with the backup.
+ * 约定：
+ *  - 备份始终是未注入的干净副本。
+ *  - backup() 具有幂等性：备份已存在时直接跳过。
+ *  - restore() 用备份覆盖当前的 workbench.html。
  */
 
 function backupPath(workbenchPath: string): string {
-  return workbenchPath + '.bak-cursor-trail';
+  return `${workbenchPath}.bak-cursor-trail`
 }
 
 /**
- * Create a backup of workbench.html if one does not already exist.
- * Should be called when workbench.html is in a clean (non-injected) state.
+ * 若备份文件不存在，则创建 workbench.html 的备份。
+ * 应在 workbench.html 处于干净（未注入）状态时调用。
  */
 export function backup(workbenchPath: string): void {
-  const bak = backupPath(workbenchPath);
+  const bak = backupPath(workbenchPath)
   if (!fs.existsSync(bak)) {
-    fs.copyFileSync(workbenchPath, bak);
+    fs.copyFileSync(workbenchPath, bak)
   }
 }
 
 /**
- * Restore the clean workbench.html from backup.
- * Throws if the backup file does not exist.
+ * 从备份还原干净的 workbench.html。
+ * 若备份文件不存在则抛出 Error。
  */
 export function restore(workbenchPath: string): void {
-  const bak = backupPath(workbenchPath);
+  const bak = backupPath(workbenchPath)
   if (!fs.existsSync(bak)) {
     throw new Error(
-      `Backup file not found: ${bak}\n` +
-      `Cannot restore workbench.html without a backup.`
-    );
+      `Backup file not found: ${bak}\n`
+      + `Cannot restore workbench.html without a backup.`,
+    )
   }
-  // Atomic-ish: copy backup → temp → rename
-  const tmp = workbenchPath + '.tmp-cursor-trail';
-  fs.copyFileSync(bak, tmp);
-  fs.renameSync(tmp, workbenchPath);
+  // 原子写入：备份 → 临时文件 → 重命名，防止写入中途崩溃导致文件损坏
+  const tmp = `${workbenchPath}.tmp-cursor-trail`
+  fs.copyFileSync(bak, tmp)
+  fs.renameSync(tmp, workbenchPath)
 }
 
 /**
- * Returns true if a backup file exists.
+ * 检查备份文件是否存在。
  */
 export function hasBackup(workbenchPath: string): boolean {
-  return fs.existsSync(backupPath(workbenchPath));
+  return fs.existsSync(backupPath(workbenchPath))
 }
