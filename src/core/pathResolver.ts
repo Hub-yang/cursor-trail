@@ -17,7 +17,9 @@ import * as vscode from 'vscode'
  *   Linux:   /usr/share/code/resources/app
  */
 
-const WORKBENCH_RELATIVE = 'out/vs/workbench/workbench.desktop.main.html'
+// VSCode 1.96+ 将 workbench 宿主页面移至 electron-browser 目录
+// 旧路径 out/vs/workbench/workbench.desktop.main.html 已不存在
+const WORKBENCH_RELATIVE = 'out/vs/code/electron-browser/workbench/workbench.html'
 
 /**
  * 返回当前 VSCode 实例 workbench.html 的绝对路径。
