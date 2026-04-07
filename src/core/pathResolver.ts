@@ -1,66 +1,40 @@
 import * as fs from 'node:fs'
 import * as path from 'node:path'
+import * as vscode from 'vscode'
 
 /**
  * pathResolver.ts
  *
- * 跨平台定位当前 VSCode 实例的 workbench.html 文件路径。
- * 支持 macOS（.app bundle）、Windows（用户级 / 系统级安装）、
- * Linux（deb、rpm、snap、AppImage）。
+ * 使用 vscode.env.appRoot 直接定位 workbench.html，跨平台可靠。
  *
- * 策略：从 `process.execPath`（VSCode 可执行文件绝对路径）出发，
- * 向上遍历目录层级，找到 workbench.desktop.main.html。
+ * 放弃 process.execPath 推导方案的原因：
+ *   调试模式下 process.execPath 指向 "Code Helper (Plugin).app" 子进程，
+ *   而非 VSCode 主进程，导致路径推导偏离目标目录。
+ *
+ * vscode.env.appRoot 示例：
+ *   macOS:   /Applications/Visual Studio Code.app/Contents/Resources/app
+ *   Windows: C:\Users\...\AppData\Local\Programs\Microsoft VS Code\resources\app
+ *   Linux:   /usr/share/code/resources/app
  */
 
-const WORKBENCH_RELATIVE
-  = 'resources/app/out/vs/workbench/workbench.desktop.main.html'
-
-/**
- * 根据当前可执行文件路径，构建 workbench.html 的候选绝对路径列表。
- */
-function buildCandidates(execPath: string): string[] {
-  const candidates: string[] = []
-
-  // macOS：/Applications/Visual Studio Code.app/Contents/MacOS/Electron
-  // process.execPath 位于 MacOS/ 目录内，向上两级到达 Contents/，
-  // workbench.html 实际路径为 Contents/Resources/app/out/vs/workbench/...
-  const macOsBase = path.resolve(execPath, '..', '..') // .app/Contents
-  candidates.push(path.join(macOsBase, WORKBENCH_RELATIVE))
-
-  // Windows / Linux：execPath 即二进制文件本身，向上逐层尝试
-  // 例如 Windows: C:\Users\…\AppData\Local\Programs\Microsoft VS Code\Code.exe
-  //      Linux:   /usr/share/code/code
-  let dir = path.dirname(execPath)
-  for (let i = 0; i < 4; i++) {
-    candidates.push(path.join(dir, WORKBENCH_RELATIVE))
-    dir = path.dirname(dir)
-  }
-
-  return candidates
-}
+const WORKBENCH_RELATIVE = 'out/vs/workbench/workbench.desktop.main.html'
 
 /**
  * 返回当前 VSCode 实例 workbench.html 的绝对路径。
- * 若所有候选路径均不存在则抛出 Error。
+ * 若文件不存在则抛出 Error（含完整路径，便于排查）。
  */
 export function resolveWorkbenchPath(): string {
-  const execPath = process.execPath
-  const candidates = buildCandidates(execPath)
+  // vscode.env.appRoot 已经指向 resources/app 目录，直接拼接即可
+  const workbenchPath = path.join(vscode.env.appRoot, WORKBENCH_RELATIVE)
 
-  for (const candidate of candidates) {
-    try {
-      if (fs.existsSync(candidate)) {
-        return candidate
-      }
-    }
-    catch {
-      // existsSync 在权限不足时也会抛出，忽略并继续尝试下一个候选路径
-    }
+  if (!fs.existsSync(workbenchPath)) {
+    throw new Error(
+      `Cannot locate workbench.html.\n`
+      + `Tried: ${workbenchPath}\n\n`
+      + `vscode.env.appRoot = ${vscode.env.appRoot}\n`
+      + `Please open a GitHub issue and include your OS and VSCode installation path.`,
+    )
   }
 
-  throw new Error(
-    `Cannot locate workbench.html.\n`
-    + `Tried:\n${candidates.map(c => `  ${c}`).join('\n')}\n\n`
-    + `Please open a GitHub issue and include your OS and VSCode installation path.`,
-  )
+  return workbenchPath
 }
