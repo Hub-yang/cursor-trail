@@ -1,17 +1,10 @@
 {
+  "publisher": "cursor-trail",
   "name": "cursor-trail",
   "displayName": "Cursor Trail",
-  "description": "Neovide-style cursor trailing particle effect for VSCode",
   "version": "0.1.0",
-  "publisher": "cursor-trail",
   "packageManager": "pnpm@10.33.0",
-  "engines": {
-    "vscode": "^1.96.0"
-  },
-  "categories": [
-    "Themes",
-    "Other"
-  ],
+  "description": "Neovide-style cursor trailing particle effect for VSCode",
   "keywords": [
     "cursor",
     "trail",
@@ -19,10 +12,17 @@
     "animation",
     "neovide"
   ],
+  "categories": [
+    "Themes",
+    "Other"
+  ],
+  "main": "./dist/extension.js",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
   "activationEvents": [
     "onStartupFinished"
   ],
-  "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
@@ -75,13 +75,24 @@
     "build": "node esbuild.config.js",
     "watch": "node esbuild.config.js --watch",
     "package": "vsce package",
-    "vscode:prepublish": "node esbuild.config.js --production"
+    "vscode:prepublish": "node esbuild.config.js --production",
+    "prepare": "husky",
+    "commitlint": "commitlint --edit",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix"
   },
   "devDependencies": {
+    "@antfu/eslint-config": "^8.0.0",
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
+    "@huberyyang/todo-scripts": "^1.0.9",
     "@types/node": "^25.5.0",
     "@types/vscode": "^1.110.0",
     "@vscode/vsce": "^3.7.1",
     "esbuild": "^0.27.5",
+    "eslint": "^10.2.0",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.4.0",
     "typescript": "^6.0.2"
   },
   "pnpm": {
@@ -90,5 +101,8 @@
       "esbuild",
       "keytar"
     ]
+  },
+  "lint-staged": {
+    "**/*.{ts,mjs,json,jsonc}": "eslint --fix"
   }
 }
