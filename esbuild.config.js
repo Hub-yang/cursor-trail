@@ -44,17 +44,11 @@ const trailBuild = {
   sourcemap: false, // 注入到 workbench.html 内联代码，不需要 source map
   minify: isProduction,
   logLevel: 'info',
-  // 编译期占位常量，防止 esbuild 报未定义变量错误
-  // 运行时这些值会被 scriptBuilder.ts 在代码头部真正注入
-  define: {
-    TRAIL_COLOR: '"#00AAFF"',
-    CURSOR_STYLE: '"line"',
-    TRAIL_LENGTH: '8',
-    CURSOR_UPDATE_POLLING_RATE: '500',
-    USE_SHADOW: 'false',
-    SHADOW_COLOR: '"#00AAFF"',
-    SHADOW_BLUR: '15',
-  },
+  // 注意：不使用 define 替换这些常量。
+  // TRAIL_COLOR / CURSOR_STYLE / TRAIL_LENGTH 等在 cursorTrail.ts 中以
+  // `declare const` 声明，esbuild 会将其保留为外部变量引用。
+  // 运行时由 scriptBuilder.ts 在 IIFE 之前注入真实的 const 声明，
+  // IIFE 通过作用域链读取这些值，从而实现动态配置。
 }
 
 async function main() {
