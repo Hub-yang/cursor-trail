@@ -16,11 +16,13 @@ import { createStatusBar, updateStatusBar } from './ui/statusBar'
 
 // ─── 内部辅助函数 ─────────────────────────────────────────────────────────────
 
-/** 显示信息通知，附带可选的"重新加载窗口"按钮。 */
-async function notifyReload(message: string): Promise<void> {
-  const action = await vscode.window.showInformationMessage(message, 'Reload Window')
-  if (action === 'Reload Window') {
-    await vscode.commands.executeCommand('workbench.action.reloadWindow')
+/** 显示信息通知，提示用户完全重启 VSCode 以使更改生效。 */
+async function promptRestart(message: string): Promise<void> {
+  // Reload Window 无法可靠刷新 Electron 缓存的 workbench.html，
+  // 必须完全退出再重新打开才能确保新注入的脚本被加载。
+  const action = await vscode.window.showInformationMessage(message, 'Restart VSCode')
+  if (action === 'Restart VSCode') {
+    await vscode.commands.executeCommand('workbench.action.quit')
   }
 }
 
@@ -96,13 +98,13 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.window
       .showWarningMessage(
         'Cursor Trail: VSCode may have updated and the trail effect was removed. '
-        + 'Click Reload to re-inject.',
-        'Reload',
+        + 'Click Re-inject to restore.',
+        'Re-inject',
       )
       .then((action) => {
-        if (action === 'Reload') {
+        if (action === 'Re-inject') {
           if (safeInject(workbenchPath)) {
-            notifyReload('Cursor Trail re-injected. Reload window to activate.')
+            promptRestart('Cursor Trail re-injected. Restart VSCode to activate.')
           }
         }
       })
@@ -115,7 +117,7 @@ export function activate(context: vscode.ExtensionContext): void {
     if (ok) {
       await setEnabled(true)
       updateStatusBar(true)
-      await notifyReload('Cursor Trail enabled. Reload window to activate.')
+      await promptRestart('Cursor Trail enabled. Restart VSCode to activate.')
     }
   })
 
@@ -131,7 +133,7 @@ export function activate(context: vscode.ExtensionContext): void {
     if (ok) {
       await setEnabled(false)
       updateStatusBar(false)
-      await notifyReload('Cursor Trail disabled. Reload window to apply.')
+      await promptRestart('Cursor Trail disabled. Restart VSCode to apply.')
     }
   })
 
@@ -140,7 +142,7 @@ export function activate(context: vscode.ExtensionContext): void {
     if (ok) {
       await setEnabled(true)
       updateStatusBar(true)
-      await notifyReload('Cursor Trail re-injected. Reload window to activate.')
+      await promptRestart('Cursor Trail re-injected. Restart VSCode to activate.')
     }
   })
 
@@ -154,7 +156,7 @@ export function activate(context: vscode.ExtensionContext): void {
 
     const ok = safeInject(workbenchPath)
     if (ok) {
-      notifyReload('Cursor Trail: Config updated. Reload window to apply.')
+      promptRestart('Cursor Trail: Config updated. Restart VSCode to apply.')
     }
   })
 
