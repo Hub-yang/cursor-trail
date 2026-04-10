@@ -19,6 +19,8 @@ Thumbs.db
 
 # Local config (Cowork / Claude)
 .claude/
+CLAUDE.md
+MEMORY.md
 
 # Editor local settings (keep launch.json & tasks.json, ignore personal settings)
 .vscode/settings.json
